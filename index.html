@@ -114,21 +114,47 @@
         let allOffers = [];
         let currentView = 'brand';
 
-        function parseDateSafely(dateStr) {
-             if (!dateStr) return null;
-             const parts = dateStr.split(/[\/\-]/);
-             if(parts.length === 3) {
-                 const day = parseInt(parts[0], 10);
-                 const month = parseInt(parts[1], 10) - 1;
-                 let year = parseInt(parts[2], 10);
-                 if(year < 100) year += 2000;
-                 if(month > 11) {
-                     return new Date(year, day - 1, month + 1); 
-                 }
-                 return new Date(year, month, day);
+        // قائمة أسماء الأشهر باللغة العربية
+        const monthsArabic = [
+            "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+            "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+        ];
+
+        // دالة لتحليل التاريخ بتنسيق (الشهر/اليوم/السنة)
+        function parseDateSafely(dateInput) {
+             if (!dateInput) return null;
+             let str = String(dateInput).trim();
+
+             // إذا كان التنسيق القادم من Google Sheets كـ Date(YYYY,M,D)
+             if (str.startsWith('Date(') && str.endsWith(')')) {
+                 const dateParts = str.substring(5, str.length - 1).split(',').map(n => parseInt(n.trim(), 10));
+                 return new Date(dateParts[0], dateParts[1], dateParts[2]);
              }
-             const parsed = new Date(dateStr);
+
+             const parts = str.split(/[\/\-]/);
+             if (parts.length === 3) {
+                 // بناءً على التوضيح: التنسيق هو الشهر / اليوم / السنة
+                 const month = parseInt(parts[0], 10) - 1; // 0-indexed في JavaScript
+                 const day = parseInt(parts[1], 10);
+                 let year = parseInt(parts[2], 10);
+                 if (year < 100) year += 2000;
+
+                 if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                     return new Date(year, month, day);
+                 }
+             }
+
+             const parsed = new Date(str);
              return isNaN(parsed.getTime()) ? null : parsed;
+        }
+
+        // دالة تحويل التاريخ إلى صيغة عربية واضحة (اليوم + اسم الشهر بالعربي + السنة)
+        function formatDateInArabic(dateObj) {
+            if (!dateObj) return 'غير محدد';
+            const day = dateObj.getDate();
+            const month = monthsArabic[dateObj.getMonth()];
+            const year = dateObj.getFullYear();
+            return `${day} ${month} ${year}`;
         }
 
         async function fetchOffers() {
@@ -155,6 +181,10 @@
                     const startDateObj = parseDateSafely(startDateStr);
                     const endDateObj = parseDateSafely(endDateStr);
 
+                    // تحويل التواريخ إلى نص عربي واضح (مثل: 10 أبريل 2026)
+                    const startDateFormatted = startDateObj ? formatDateInArabic(startDateObj) : (startDateStr || 'غير محدد');
+                    const endDateFormatted = endDateObj ? formatDateInArabic(endDateObj) : (endDateStr || 'غير محدد');
+
                     let isActive = false;
                     if (startDateObj && endDateObj) {
                          isActive = (today >= startDateObj) && (today <= endDateObj);
@@ -168,8 +198,8 @@
                         brand: c[0] ? c[0].v : 'غير محدد',
                         product: c[1] ? c[1].v : '',
                         offer: c[2] ? c[2].v : '',
-                        startDate: startDateStr,
-                        endDate: endDateStr,
+                        startDate: startDateFormatted,
+                        endDate: endDateFormatted,
                         offerTime: c[5] ? c[5].v : '',
                         entryMethod: c[6] ? c[6].v : '',
                         imageUrl: c[7] ? c[7].v : '',
@@ -185,7 +215,7 @@
             } catch (err) {
                 console.error(err);
                 document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('errorState').classList.add('hidden');
+                document.getElementById('errorState').classList.remove('hidden');
             }
         }
 
@@ -225,7 +255,6 @@
                 <div onclick="openModal(${originalIndex})" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200 cursor-pointer flex flex-col justify-between group">
                     <div>
                         <div class="flex justify-between items-start mb-3 gap-2">
-                            <!-- بالون الشركة بحجم خط كبير جداً -->
                             <span class="bg-emerald-700 text-white text-base md:text-lg font-black px-3.5 py-1 rounded-full shadow-sm">
                                 ${item.brand}
                             </span>
@@ -242,7 +271,7 @@
                     </div>
 
                     <div class="pt-3 border-t border-slate-100 text-xs text-slate-500 flex justify-between items-center">
-                        <span><i class="fa-regular fa-calendar ml-1"></i> ${item.startDate || '-'} إلى ${item.endDate || '-'}</span>
+                        <span><i class="fa-regular fa-calendar ml-1"></i> ${item.startDate} إلى ${item.endDate}</span>
                         <span class="text-emerald-600 font-semibold">التفاصيل <i class="fa-solid fa-chevron-left text-[10px]"></i></span>
                     </div>
                 </div>
@@ -265,9 +294,7 @@
 
                 return `
                 <div onclick="openModal(${originalIndex})" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition cursor-pointer">
-                    <!-- Top Header: Company Balloon & Status -->
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-                        <!-- بالون الشركة بفونت كبير -->
                         <div class="bg-emerald-700 text-white text-lg md:text-xl font-black px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2">
                             <i class="fa-solid fa-building text-emerald-300 text-sm"></i>
                             <span>${item.brand}</span>
@@ -278,26 +305,23 @@
                         </span>
                     </div>
 
-                    <!-- Product Name & Offer Badge -->
                     <div class="mb-4">
                         <h3 class="font-bold text-slate-800 text-lg">${item.product}</h3>
                         ${item.offer ? `<span class="text-sm font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg inline-block mt-1">${item.offer}</span>` : ''}
                     </div>
 
-                    <!-- Horizontal Timeline Bar Section -->
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <div class="flex justify-between items-center text-xs md:text-sm font-bold text-slate-700 mb-2">
                             <span class="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
                                 <i class="fa-regular fa-calendar-check text-emerald-600"></i>
-                                البداية: <strong class="text-emerald-800">${item.startDate || 'غير محدد'}</strong>
+                                البداية: <strong class="text-emerald-800">${item.startDate}</strong>
                             </span>
                             <span class="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
                                 <i class="fa-regular fa-calendar-xmark text-red-500"></i>
-                                النهاية: <strong class="text-red-800">${item.endDate || 'غير محدد'}</strong>
+                                النهاية: <strong class="text-red-800">${item.endDate}</strong>
                             </span>
                         </div>
 
-                        <!-- Colored Horizontal Bar -->
                         <div class="relative w-full h-5 bg-slate-200 rounded-full overflow-hidden p-0.5 border border-slate-300">
                             <div class="h-full rounded-full ${barGradient} transition-all duration-500 flex items-center justify-center text-[10px] text-white font-bold">
                                 ${item.isActive ? 'ساري الفعالية' : ''}
@@ -334,7 +358,6 @@
 
             content.innerHTML = `
                 <div class="mb-4">
-                    <!-- بالون اسم الشركة داخل الشاشة المنبثقة -->
                     <span class="bg-emerald-700 text-white text-lg font-black px-4 py-1.5 rounded-full inline-block shadow-sm mb-2">
                         ${item.brand}
                     </span>
@@ -349,7 +372,7 @@
 
                 <div class="grid grid-cols-2 gap-3 mb-4 bg-slate-50 p-3 rounded-xl text-xs text-slate-700">
                     <div><strong>نوع العرض:</strong> ${item.offer || '-'}</div>
-                    <div><strong>الفترة:</strong> ${item.startDate || '-'} إلى ${item.endDate || '-'}</div>
+                    <div><strong>الفترة:</strong> ${item.startDate} إلى ${item.endDate}</div>
                     <div><strong>طريقة الإدخال:</strong> ${item.entryMethod || '-'}</div>
                     <div><strong>الحافز:</strong> ${item.incentive || '-'}</div>
                 </div>
@@ -369,7 +392,6 @@
             document.getElementById('offerModal').classList.add('hidden');
         }
 
-        // Fetch initial data on load
         fetchOffers();
     </script>
 </body>
