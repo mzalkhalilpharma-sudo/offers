@@ -114,6 +114,34 @@
         let allOffers = [];
         let currentView = 'brand';
 
+        // دالة لتحليل التاريخ بأمان
+        function parseDateSafely(dateStr) {
+             if (!dateStr) return null;
+             
+             // محاولة التعامل مع التنسيق الشائع في الشيت (شهر/يوم/سنة أو يوم/شهر/سنة)
+             // سنعتبر التنسيق السائد في مصر هو يوم/شهر/سنة
+             const parts = dateStr.split(/[\/\-]/);
+             if(parts.length === 3) {
+                 // افتراض أن التنسيق هو يوم/شهر/سنة
+                 const day = parseInt(parts[0], 10);
+                 const month = parseInt(parts[1], 10) - 1; // الأشهر تبدأ من 0 في JS
+                 let year = parseInt(parts[2], 10);
+                 
+                 // إذا كانت السنة مكونة من رقمين
+                 if(year < 100) year += 2000;
+                 
+                 // التأكد من صحة التواريخ (لو الشهر أكبر من 12، ربما التنسيق شهر/يوم/سنة)
+                 if(month > 11) {
+                     return new Date(year, day - 1, month + 1); 
+                 }
+                 return new Date(year, month, day);
+             }
+             
+             // محاولة الاعتماد على الدالة الافتراضية إذا فشل التحليل المخصص
+             const parsed = new Date(dateStr);
+             return isNaN(parsed.getTime()) ? null : parsed;
+        }
+
         async function fetchOffers() {
             document.getElementById('loadingState').classList.remove('hidden');
             document.getElementById('errorState').classList.add('hidden');
@@ -128,20 +156,46 @@
                 const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
                 const data = JSON.parse(jsonString);
 
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // تصفير الوقت للمقارنة الصحيحة
+
                 allOffers = data.table.rows.map(row => {
                     const c = row.c;
+                    const startDateStr = c[3] ? (c[3].f || c[3].v) : '';
+                    const endDateStr = c[4] ? (c[4].f || c[4].v) : '';
+                    
+                    const startDateObj = parseDateSafely(startDateStr);
+                    const endDateObj = parseDateSafely(endDateStr);
+
+                    let isActive = false;
+                    
+                    if (startDateObj && endDateObj) {
+                         // العرض ساري إذا كان تاريخ اليوم بين البداية والنهاية
+                         isActive = (today >= startDateObj) && (today <= endDateObj);
+                    } else if (startDateObj && !endDateObj) {
+                         // إذا كان هناك بداية فقط، نفترض أنه ساري إذا بدأ
+                         isActive = today >= startDateObj;
+                    } else if (!startDateObj && endDateObj) {
+                         // إذا كان هناك نهاية فقط، نفترض أنه ساري حتى النهاية
+                         isActive = today <= endDateObj;
+                    } else {
+                         // إذا لم يوجد تواريخ، نعتبره غير نشط أو العكس حسب سياسة عملك
+                         // سنعتبره غير نشط كإجراء احترازي
+                         isActive = false;
+                    }
+
                     return {
                         brand: c[0] ? c[0].v : 'غير محدد',
                         product: c[1] ? c[1].v : '',
                         offer: c[2] ? c[2].v : '',
-                        startDate: c[3] ? (c[3].f || c[3].v) : '',
-                        endDate: c[4] ? (c[4].f || c[4].v) : '',
+                        startDate: startDateStr,
+                        endDate: endDateStr,
                         offerTime: c[5] ? c[5].v : '',
                         entryMethod: c[6] ? c[6].v : '',
                         imageUrl: c[7] ? c[7].v : '',
                         notes: c[8] ? c[8].v : '',
                         incentive: c[9] ? c[9].v : '',
-                        status: c[10] ? c[10].v : 'Not active'
+                        isActive: isActive // أضفنا حالة النشاط المحسوبة
                     };
                 }).filter(item => item.brand || item.product);
 
@@ -162,8 +216,11 @@
             const filtered = allOffers.filter(item => {
                 const matchesSearch = item.brand.toLowerCase().includes(search) || 
                                       item.product.toLowerCase().includes(search) || 
-                                      item.offer.toLowerCase().includes(search);
-                const matchesStatus = statusFilter === 'all' || (item.status && item.status.toLowerCase().includes('active') && !item.status.toLowerCase().includes('not'));
+                                      (item.offer && item.offer.toLowerCase().includes(search));
+                
+                // استخدام حالة النشاط المحسوبة
+                const matchesStatus = statusFilter === 'all' || item.isActive;
+                
                 return matchesSearch && matchesStatus;
             });
 
@@ -185,16 +242,15 @@
             }
 
             container.innerHTML = offers.map((item, index) => {
-                const isActive = item.status && item.status.toLowerCase().includes('active') && !item.status.toLowerCase().includes('not');
                 return `
-                <div onclick="openModal(${index})" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200 cursor-pointer flex flex-col justify-between group">
+                <div onclick="openModal(${allOffers.indexOf(item)})" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200 cursor-pointer flex flex-col justify-between group">
                     <div>
                         <div class="flex justify-between items-start mb-3">
                             <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg">
                                 ${item.brand}
                             </span>
-                            <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">
-                                ${isActive ? 'ساري' : 'غير نشط'}
+                            <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">
+                                ${item.isActive ? 'ساري' : 'غير نشط'}
                             </span>
                         </div>
 
@@ -222,16 +278,15 @@
             }
 
             container.innerHTML = offers.map((item, index) => {
-                const isActive = item.status && item.status.toLowerCase().includes('active') && !item.status.toLowerCase().includes('not');
                 return `
-                <div class="relative group cursor-pointer" onclick="openModal(${index})">
-                    <div class="absolute -right-[25px] top-1.5 w-4 h-4 rounded-full ${isActive ? 'bg-emerald-600 ring-4 ring-emerald-100' : 'bg-slate-400'}"></div>
+                <div class="relative group cursor-pointer" onclick="openModal(${allOffers.indexOf(item)})">
+                    <div class="absolute -right-[25px] top-1.5 w-4 h-4 rounded-full ${item.isActive ? 'bg-emerald-600 ring-4 ring-emerald-100' : 'bg-slate-400'}"></div>
                     
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                             <span class="font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md text-xs">${item.brand}</span>
                             <span class="text-xs text-slate-500 font-medium">
-                                <i class="fa-regular fa-calendar-check ml-1 text-emerald-600"></i> ${item.startDate} — ${item.endDate}
+                                <i class="fa-regular fa-calendar-check ml-1 text-emerald-600"></i> ${item.startDate || '-'} — ${item.endDate || '-'}
                             </span>
                         </div>
                         <h4 class="font-bold text-slate-800 text-base mb-1">${item.product}</h4>
@@ -279,7 +334,7 @@
 
                 <div class="grid grid-cols-2 gap-3 mb-4 bg-slate-50 p-3 rounded-xl text-xs text-slate-700">
                     <div><strong>نوع العرض:</strong> ${item.offer || '-'}</div>
-                    <div><strong>الفترة:</strong> ${item.startDate} إلى ${item.endDate}</div>
+                    <div><strong>الفترة:</strong> ${item.startDate || '-'} إلى ${item.endDate || '-'}</div>
                     <div><strong>طريقة الإدخال:</strong> ${item.entryMethod || '-'}</div>
                     <div><strong>الحافز:</strong> ${item.incentive || '-'}</div>
                 </div>
