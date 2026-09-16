@@ -3,95 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>دليل عروض الصيدلية</title>
+    <title>دليل عروض الصيدلية - عروض OFFERS</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Font Cairo -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Google Font Cairo & Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    
     <style>
         body { font-family: 'Cairo', sans-serif; }
+        .font-english { font-family: 'Montserrat', sans-serif; }
+
+        /* تأثير إضاءة نيون ليافطة العروض (بتنور وتطفي) */
+        @keyframes neonPulse {
+            0%, 100% {
+                text-shadow: 
+                    0 0 7px #fff,
+                    0 0 10px #fff,
+                    0 0 21px #fff,
+                    0 0 42px #10b981,
+                    0 0 82px #10b981,
+                    0 0 92px #10b981,
+                    0 0 102px #10b981;
+                box-shadow: 
+                    0 0 15px #10b981,
+                    inset 0 0 15px #10b981;
+                opacity: 1;
+            }
+            50% {
+                text-shadow: 
+                    0 0 2px #fff,
+                    0 0 5px #fff,
+                    0 0 10px #10b981,
+                    0 0 20px #10b981;
+                box-shadow: 
+                    0 0 5px #059669,
+                    inset 0 0 5px #059669;
+                opacity: 0.85;
+            }
+            70% {
+                opacity: 0.95;
+            }
+            72% {
+                opacity: 0.4;
+            }
+            74% {
+                opacity: 1;
+            }
+        }
+
+        .neon-sign {
+            animation: neonPulse 2.5s infinite alternate;
+        }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
 
-    <!-- Header Section -->
-    <header class="bg-emerald-700 text-white shadow-lg sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <i class="fa-solid fa-prescription-bottle-medical text-3xl text-emerald-300"></i>
-                <div>
-                    <h1 class="text-2xl font-bold">دليل عروض الصيدلية</h1>
-                    <p class="text-xs text-emerald-100">تحديثات مستمرة ومباشرة للعروض والخصومات</p>
+    <div>
+        <!-- Header Section -->
+        <header class="bg-slate-900 text-white shadow-xl sticky top-0 z-30 border-b border-emerald-500/30">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-prescription-bottle-medical text-3xl text-emerald-400"></i>
+                    <div>
+                        <h1 class="text-xl font-bold">دليل عروض الصيدلية</h1>
+                        <p class="text-xs text-slate-400">تحديثات مستمرة ومباشرة للخصومات</p>
+                    </div>
+                </div>
+
+                <!-- Controls: View Switch & Reload -->
+                <div class="flex items-center gap-2 bg-slate-800 p-1.5 rounded-xl border border-slate-700">
+                    <button id="btnBrandView" onclick="switchView('brand')" class="px-4 py-2 rounded-lg text-sm font-semibold transition bg-emerald-600 text-white shadow">
+                        <i class="fa-solid fa-boxes-stacked ml-1"></i> البراندات والمنتجات
+                    </button>
+                    <button id="btnTimelineView" onclick="switchView('timeline')" class="px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white">
+                        <i class="fa-solid fa-timeline ml-1"></i> الشريط الزمني
+                    </button>
+                    <button onclick="fetchOffers()" class="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition" title="تحديث البيانات">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
                 </div>
             </div>
-            
-            <!-- Controls: View Switch & Reload -->
-            <div class="flex items-center gap-2 bg-emerald-800/60 p-1.5 rounded-xl border border-emerald-600">
-                <button id="btnBrandView" onclick="switchView('brand')" class="px-4 py-2 rounded-lg text-sm font-semibold transition bg-white text-emerald-800 shadow">
-                    <i class="fa-solid fa-boxes-stacked ml-1"></i> البراندات والمنتجات
-                </button>
-                <button id="btnTimelineView" onclick="switchView('timeline')" class="px-4 py-2 rounded-lg text-sm font-semibold transition text-emerald-100 hover:text-white">
-                    <i class="fa-solid fa-timeline ml-1"></i> الشريط الزمني
-                </button>
-                <button onclick="fetchOffers()" class="p-2 rounded-lg text-emerald-200 hover:text-white hover:bg-emerald-700 transition" title="تحديث البيانات">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                </button>
+        </header>
+
+        <!-- Neon Banner Sign (يافطة ينور وتطفي) -->
+        <section class="max-w-7xl mx-auto px-4 pt-6">
+            <div class="bg-slate-950 rounded-3xl p-6 md:p-8 text-center border-2 border-emerald-500/80 shadow-2xl relative overflow-hidden">
+                <!-- Background decorative glow -->
+                <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-96 h-32 bg-emerald-500/10 blur-3xl rounded-full"></div>
+
+                <!-- Neon Title Banner -->
+                <div class="neon-sign inline-block bg-slate-900/90 border-2 border-emerald-400 px-8 py-3.5 rounded-2xl">
+                    <div class="flex items-center justify-center gap-3 text-white">
+                        <span class="text-3xl md:text-5xl font-black text-emerald-300 tracking-wide">عروض</span>
+                        <span class="text-2xl md:text-4xl font-black font-english text-emerald-400 uppercase tracking-widest">OFFERS</span>
+                        <i class="fa-solid fa-bolt text-yellow-400 text-2xl md:text-3xl"></i>
+                    </div>
+                </div>
             </div>
-        </div>
-    </header>
+        </section>
 
-    <!-- Filter & Search Bar -->
-    <section class="max-w-7xl mx-auto px-4 mt-6">
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <!-- Search input -->
-            <div class="relative w-full md:w-96">
-                <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3.5 text-slate-400"></i>
-                <input type="text" id="searchInput" oninput="applyFilters()" placeholder="ابحث باسم الشركة، المنتج، أو العرض..." 
-                       class="w-full pr-10 pl-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white text-sm">
+        <!-- Filter & Search Bar -->
+        <section class="max-w-7xl mx-auto px-4 mt-6">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <!-- Search input -->
+                <div class="relative w-full md:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3.5 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="ابحث باسم الشركة، المنتج، أو العرض..." 
+                           class="w-full pr-10 pl-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white text-sm">
+                </div>
+
+                <!-- Active Status Toggle Filter -->
+                <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                    <span class="text-sm font-medium text-slate-600">تصفية العروض:</span>
+                    <select id="statusFilter" onchange="applyFilters()" class="bg-slate-50 border border-slate-300 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold">
+                        <option value="active">العروض النشطة حالياً فقط (Active)</option>
+                        <option value="all">جميع العروض (النشطة والمنتهية)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Area -->
+        <main class="max-w-7xl mx-auto px-4 py-6">
+            <!-- Loading State -->
+            <div id="loadingState" class="text-center py-20">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-emerald-600 mb-3"></i>
+                <p class="text-slate-600 font-medium">جاري تحميل العروض المباشرة من الجدول...</p>
             </div>
 
-            <!-- Active Status Toggle Filter -->
-            <div class="flex items-center gap-3 w-full md:w-auto justify-end">
-                <span class="text-sm font-medium text-slate-600">تصفية العروض:</span>
-                <select id="statusFilter" onchange="applyFilters()" class="bg-slate-50 border border-slate-300 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold">
-                    <option value="active">العروض النشطة حالياً فقط (Active)</option>
-                    <option value="all">جميع العروض (النشطة والمنتهية)</option>
-                </select>
+            <!-- Error State -->
+            <div id="errorState" class="hidden text-center py-16 bg-white rounded-2xl border border-red-200 shadow-sm">
+                <i class="fa-solid fa-triangle-exclamation text-4xl text-red-500 mb-3"></i>
+                <p class="text-slate-700 font-semibold mb-2">تعذر جلب البيانات من Google Sheet</p>
+                <p class="text-xs text-slate-500">يرجى التأكد من أن الجدول متاح للعامة (Anyone with the link can view).</p>
             </div>
-        </div>
-    </section>
 
-    <!-- Main Content Area -->
-    <main class="max-w-7xl mx-auto px-4 py-6">
-        <!-- Loading State -->
-        <div id="loadingState" class="text-center py-20">
-            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-emerald-600 mb-3"></i>
-            <p class="text-slate-600 font-medium">جاري تحميل العروض المباشرة من الجدول...</p>
-        </div>
-
-        <!-- Error State -->
-        <div id="errorState" class="hidden text-center py-16 bg-white rounded-2xl border border-red-200 shadow-sm">
-            <i class="fa-solid fa-triangle-exclamation text-4xl text-red-500 mb-3"></i>
-            <p class="text-slate-700 font-semibold mb-2">تعذر جلب البيانات من Google Sheet</p>
-            <p class="text-xs text-slate-500">يرجى التأكد من أن الجدول متاح للعامة (Anyone with the link can view).</p>
-        </div>
-
-        <!-- Brands / Products Grid View -->
-        <div id="brandView" class="hidden">
-            <div id="brandsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Cards will be populated here -->
+            <!-- Brands / Products Grid View -->
+            <div id="brandView" class="hidden">
+                <div id="brandsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards will be populated here -->
+                </div>
             </div>
-        </div>
 
-        <!-- Timeline View (Horizontal Bars) -->
-        <div id="timelineView" class="hidden">
-            <div id="timelineContainer" class="space-y-4">
-                <!-- Horizontal timeline items will be populated here -->
+            <!-- Timeline View (Horizontal Bars) -->
+            <div id="timelineView" class="hidden">
+                <div id="timelineContainer" class="space-y-4">
+                    <!-- Horizontal timeline items will be populated here -->
+                </div>
             </div>
+        </main>
+    </div>
+
+    <!-- Footer Signature (Design by Mena Nazih) -->
+    <footer class="bg-slate-900 text-slate-400 border-t border-slate-800 py-6 mt-10">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-xs md:text-sm font-english tracking-widest text-slate-400">
+                Design by: <span class="text-emerald-400 font-bold hover:text-emerald-300 transition-colors">Mena Nazih</span>
+            </p>
         </div>
-    </main>
+    </footer>
 
     <!-- Modal for Image & Offer Details -->
     <div id="offerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -125,7 +198,6 @@
              if (!dateInput) return null;
              let str = String(dateInput).trim();
 
-             // إذا كان التنسيق القادم من Google Sheets كـ Date(YYYY,M,D)
              if (str.startsWith('Date(') && str.endsWith(')')) {
                  const dateParts = str.substring(5, str.length - 1).split(',').map(n => parseInt(n.trim(), 10));
                  return new Date(dateParts[0], dateParts[1], dateParts[2]);
@@ -133,8 +205,7 @@
 
              const parts = str.split(/[\/\-]/);
              if (parts.length === 3) {
-                 // بناءً على التوضيح: التنسيق هو الشهر / اليوم / السنة
-                 const month = parseInt(parts[0], 10) - 1; // 0-indexed في JavaScript
+                 const month = parseInt(parts[0], 10) - 1; 
                  const day = parseInt(parts[1], 10);
                  let year = parseInt(parts[2], 10);
                  if (year < 100) year += 2000;
@@ -148,7 +219,7 @@
              return isNaN(parsed.getTime()) ? null : parsed;
         }
 
-        // دالة تحويل التاريخ إلى صيغة عربية واضحة (اليوم + اسم الشهر بالعربي + السنة)
+        // تحويل التاريخ إلى صيغة عربية واضحة (اليوم + اسم الشهر بالعربي + السنة)
         function formatDateInArabic(dateObj) {
             if (!dateObj) return 'غير محدد';
             const day = dateObj.getDate();
@@ -181,7 +252,6 @@
                     const startDateObj = parseDateSafely(startDateStr);
                     const endDateObj = parseDateSafely(endDateStr);
 
-                    // تحويل التواريخ إلى نص عربي واضح (مثل: 10 أبريل 2026)
                     const startDateFormatted = startDateObj ? formatDateInArabic(startDateObj) : (startDateStr || 'غير محدد');
                     const endDateFormatted = endDateObj ? formatDateInArabic(endDateObj) : (endDateStr || 'غير محدد');
 
@@ -339,13 +409,13 @@
             const btnTimeline = document.getElementById('btnTimelineView');
 
             if (view === 'brand') {
-                btnBrand.className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-white text-emerald-800 shadow";
-                btnTimeline.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-emerald-100 hover:text-white";
+                btnBrand.className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-emerald-600 text-white shadow";
+                btnTimeline.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white";
                 document.getElementById('brandView').classList.remove('hidden');
                 document.getElementById('timelineView').classList.add('hidden');
             } else {
-                btnTimeline.className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-white text-emerald-800 shadow";
-                btnBrand.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-emerald-100 hover:text-white";
+                btnTimeline.className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-emerald-600 text-white shadow";
+                btnBrand.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white";
                 document.getElementById('timelineView').classList.remove('hidden');
                 document.getElementById('brandView').classList.add('hidden');
             }
