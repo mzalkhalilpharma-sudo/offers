@@ -44,6 +44,11 @@
         .neon-sign {
             animation: neonPulse 2.5s infinite alternate;
         }
+
+        /* تخصيص مظهر النتيجة والتقويم */
+        .calendar-day-box {
+            min-height: 120px;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
@@ -67,7 +72,7 @@
                         <i class="fa-solid fa-boxes-stacked ml-1"></i> البراندات والمنتجات
                     </button>
                     <button id="btnTimelineView" onclick="switchView('timeline')" class="px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white">
-                        <i class="fa-solid fa-timeline ml-1"></i> الشريط الزمني
+                        <i class="fa-solid fa-calendar-days ml-1"></i> نتيجة العروض (التقويم)
                     </button>
                     <button onclick="fetchOffers()" class="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition" title="تحديث البيانات">
                         <i class="fa-solid fa-arrows-rotate"></i>
@@ -134,10 +139,36 @@
                 </div>
             </div>
 
-            <!-- Timeline View (Horizontal Bars) -->
+            <!-- Calendar / Result View (النتيجة) -->
             <div id="timelineView" class="hidden">
-                <div id="timelineContainer" class="space-y-4">
-                    <!-- Horizontal timeline items will be populated here -->
+                <div class="bg-white rounded-3xl p-4 md:p-6 shadow-sm border border-slate-200">
+                    <!-- Calendar Header (Month Selector) -->
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-calendar-check text-2xl text-emerald-600"></i>
+                            <h2 class="text-xl md:text-2xl font-black text-slate-800">نتيجة العروض الشهرية</h2>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0" id="monthTabs">
+                            <!-- Month tabs populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Days of Week Header -->
+                    <div class="grid grid-cols-7 gap-1 md:gap-2 text-center font-bold text-xs md:text-sm text-slate-700 bg-emerald-50 p-2 md:p-3 rounded-2xl mb-3 border border-emerald-100">
+                        <div>السبت</div>
+                        <div>الأحد</div>
+                        <div>الإثنين</div>
+                        <div>الثلاثاء</div>
+                        <div>الأربعاء</div>
+                        <div>الخميس</div>
+                        <div>الجمعة</div>
+                    </div>
+
+                    <!-- Calendar Grid Container -->
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-1 md:gap-2">
+                        <!-- Days populated dynamically -->
+                    </div>
                 </div>
             </div>
         </main>
@@ -171,11 +202,23 @@
         const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
 
         let allOffers = [];
+        let filteredOffers = [];
         let currentView = 'brand';
+        let selectedYearMonth = null; // { year: 2026, month: 3 }
 
         const monthsArabic = [
             "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
             "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+        ];
+
+        // مصفوفة ألوان التمييز لأفلام/أشرطة العروض
+        const offerGradients = [
+            "from-emerald-600 to-teal-700",
+            "from-blue-600 to-indigo-700",
+            "from-purple-600 to-pink-700",
+            "from-amber-600 to-orange-700",
+            "from-rose-600 to-red-700",
+            "from-cyan-600 to-blue-700"
         ];
 
         function parseDateSafely(dateInput) {
@@ -215,7 +258,6 @@
             if (!url) return '';
             let cleanedUrl = url.trim();
             
-            // معالجة روابط Google Drive
             if (cleanedUrl.includes('drive.google.com') && cleanedUrl.includes('/d/')) {
                 const match = cleanedUrl.match(/\/d\/([^\/]+)/);
                 if (match && match[1]) {
@@ -223,7 +265,6 @@
                 }
             }
             
-            // معالجة روابط ImgBB القصيرة
             if (cleanedUrl.match(/^https?:\/\/(www\.)?ibb\.co\/[a-zA-Z0-9]+$/)) {
                 const imageId = cleanedUrl.split('/').pop();
                 return `https://i.ibb.co/${imageId}/image.png`;
@@ -278,6 +319,10 @@
                         brand: c[0] ? String(c[0].v) : 'غير محدد',
                         product: c[1] ? String(c[1].v) : '',
                         offer: c[2] ? String(c[2].v) : '',
+                        startDateStr: startDateStr,
+                        endDateStr: endDateStr,
+                        startDateObj: startDateObj,
+                        endDateObj: endDateObj,
                         startDate: startDateFormatted,
                         endDate: endDateFormatted,
                         offerTime: c[5] ? String(c[5].v) : '',
@@ -303,7 +348,7 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('statusFilter').value;
 
-            const filtered = allOffers.filter(item => {
+            filteredOffers = allOffers.filter(item => {
                 const matchesSearch = item.brand.toLowerCase().includes(search) || 
                                       item.product.toLowerCase().includes(search) || 
                                       item.offer.toLowerCase().includes(search) ||
@@ -313,8 +358,8 @@
                 return matchesSearch && matchesStatus;
             });
 
-            renderBrandView(filtered);
-            renderTimelineView(filtered);
+            renderBrandView(filteredOffers);
+            setupCalendarMonthTabs(filteredOffers);
 
             if (currentView === 'brand') {
                 document.getElementById('brandView').classList.remove('hidden');
@@ -365,62 +410,129 @@
             }).join('');
         }
 
-        function renderTimelineView(offers) {
-            const container = document.getElementById('timelineContainer');
-            if (offers.length === 0) {
-                container.innerHTML = `<p class="text-slate-500 py-10 text-center">لا توجد عروض مطابقة للشريط الزمني.</p>`;
-                return;
+        // إعداد تبويبات الأشهر في النتيجة
+        function setupCalendarMonthTabs(offers) {
+            const tabsContainer = document.getElementById('monthTabs');
+            const availableMonthsMap = new Map();
+
+            // العثور على جميع الأشهر المتاحة في تواريخ العروض
+            offers.forEach(offer => {
+                if (offer.startDateObj) {
+                    const key = `${offer.startDateObj.getFullYear()}-${offer.startDateObj.getMonth()}`;
+                    availableMonthsMap.set(key, { year: offer.startDateObj.getFullYear(), month: offer.startDateObj.getMonth() });
+                }
+                if (offer.endDateObj) {
+                    const key = `${offer.endDateObj.getFullYear()}-${offer.endDateObj.getMonth()}`;
+                    availableMonthsMap.set(key, { year: offer.endDateObj.getFullYear(), month: offer.endDateObj.getMonth() });
+                }
+            });
+
+            const monthsList = Array.from(availableMonthsMap.values()).sort((a, b) => (a.year * 12 + a.month) - (b.year * 12 + b.month));
+
+            if (monthsList.length === 0) {
+                const now = new Date();
+                monthsList.push({ year: now.getFullYear(), month: now.getMonth() });
             }
 
-            container.innerHTML = offers.map((item) => {
-                const originalIndex = allOffers.indexOf(item);
-                const barGradient = item.isActive 
-                    ? 'bg-gradient-to-l from-emerald-500 via-teal-500 to-emerald-600' 
-                    : 'bg-slate-300';
-                const hasImages = item.images && item.images.length > 0;
+            if (!selectedYearMonth || !monthsList.some(m => m.year === selectedYearMonth.year && m.month === selectedYearMonth.month)) {
+                selectedYearMonth = monthsList[0];
+            }
 
+            tabsContainer.innerHTML = monthsList.map(m => {
+                const isSelected = selectedYearMonth && selectedYearMonth.year === m.year && selectedYearMonth.month === m.month;
                 return `
-                <div onclick="openModal(${originalIndex})" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition cursor-pointer">
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-                        <div class="bg-emerald-700 text-white text-lg md:text-xl font-black px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2">
-                            <i class="fa-solid fa-building text-emerald-300 text-sm"></i>
-                            <span>${item.brand}</span>
-                        </div>
-                        
-                        <div class="flex items-center gap-2">
-                            ${hasImages ? `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-lg font-bold"><i class="fa-solid fa-images ml-1"></i> صور متوفرة (${item.images.length})</span>` : ''}
-                            <span class="text-xs px-3 py-1 rounded-full font-bold ${item.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">
-                                ${item.isActive ? 'العرض ساري حالياً' : 'عرض منتهي'}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <h3 class="font-bold text-slate-800 text-lg">${item.product}</h3>
-                        ${item.offer ? `<span class="text-sm font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg inline-block mt-1">${item.offer}</span>` : ''}
-                    </div>
-
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <div class="flex justify-between items-center text-xs md:text-sm font-bold text-slate-700 mb-2">
-                            <span class="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
-                                <i class="fa-regular fa-calendar-check text-emerald-600"></i>
-                                البداية: <strong class="text-emerald-800">${item.startDate}</strong>
-                            </span>
-                            <span class="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
-                                <i class="fa-regular fa-calendar-xmark text-red-500"></i>
-                                النهاية: <strong class="text-red-800">${item.endDate}</strong>
-                            </span>
-                        </div>
-
-                        <div class="relative w-full h-5 bg-slate-200 rounded-full overflow-hidden p-0.5 border border-slate-300">
-                            <div class="h-full rounded-full ${barGradient} transition-all duration-500 flex items-center justify-center text-[10px] text-white font-bold">
-                                ${item.isActive ? 'ساري الفعالية' : ''}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <button onclick="changeCalendarMonth(${m.year}, ${m.month})" 
+                            class="px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition whitespace-nowrap ${isSelected ? 'bg-emerald-700 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'}">
+                        ${monthsArabic[m.month]} ${m.year}
+                    </button>
                 `;
             }).join('');
+
+            renderCalendarGrid(selectedYearMonth.year, selectedYearMonth.month, offers);
+        }
+
+        function changeCalendarMonth(year, month) {
+            selectedYearMonth = { year, month };
+            setupCalendarMonthTabs(filteredOffers);
+        }
+
+        // بناء النتيجة والتقويم
+        function renderCalendarGrid(year, month, offers) {
+            const gridContainer = document.getElementById('calendarGrid');
+            gridContainer.innerHTML = '';
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+
+            // في التقويم العربي، السبت هو بداية الأسبوع (السبت=6 في JS Date)
+            // نحتاج ضبط الإزاحة لتبدأ من السبت
+            let dayOfWeekOffset = (firstDay.getDay() + 1) % 7; 
+
+            // إضافة خلايا الأيام الفارغة قبل بداية الشهر
+            for (let i = 0; i < dayOfWeekOffset; i++) {
+                gridContainer.innerHTML += `<div class="bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 min-h-[100px]"></div>`;
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // ملء أيام الشهر
+            for (let day = 1; day <= daysInMonth; day++) {
+                const currentCellDate = new Date(year, month, day);
+                currentCellDate.setHours(0,0,0,0);
+
+                const isToday = (today.getTime() === currentCellDate.getTime());
+
+                // البحث عن العروض السارية في هذا اليوم المحدّد
+                const dayOffers = offers.filter(item => {
+                    if (item.startDateObj && item.endDateObj) {
+                        return currentCellDate >= item.startDateObj && currentCellDate <= item.endDateObj;
+                    } else if (item.startDateObj) {
+                        return currentCellDate >= item.startDateObj;
+                    } else if (item.endDateObj) {
+                        return currentCellDate <= item.endDateObj;
+                    }
+                    return false;
+                });
+
+                let eventsHtml = '';
+                dayOffers.forEach((item, idx) => {
+                    const originalIndex = allOffers.indexOf(item);
+                    const gradient = offerGradients[originalIndex % offerGradients.length];
+
+                    eventsHtml += `
+                        <div onclick="openModal(${originalIndex})" 
+                             class="my-2 p-2 rounded-xl bg-gradient-to-r ${gradient} text-white shadow-sm cursor-pointer hover:scale-[1.03] transition-all relative border border-white/20 group">
+                            
+                            <!-- بالونة الشركة البارزة الملونة فوق الشريط -->
+                            <div class="inline-block bg-slate-900 text-yellow-300 font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-md border border-yellow-400/50 mb-1">
+                                <i class="fa-solid fa-building text-[9px] ml-1"></i> ${item.brand}
+                            </div>
+
+                            <p class="text-xs font-bold leading-tight line-clamp-2 text-white">
+                                ${item.product}
+                            </p>
+                            
+                            ${item.offer ? `<span class="mt-1 inline-block text-[10px] font-extrabold bg-white/20 backdrop-blur-xs px-2 py-0.5 rounded text-emerald-100">${item.offer}</span>` : ''}
+                        </div>
+                    `;
+                });
+
+                gridContainer.innerHTML += `
+                    <div class="calendar-day-box bg-white rounded-2xl p-2 border ${isToday ? 'border-2 border-emerald-500 bg-emerald-50/30' : 'border-slate-200'} flex flex-col justify-start">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="w-7 h-7 flex items-center justify-center rounded-full text-xs font-black ${isToday ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700'}">
+                                ${day}
+                            </span>
+                            ${dayOffers.length > 0 ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">${dayOffers.length} عروض</span>` : ''}
+                        </div>
+                        <div class="overflow-y-auto max-h-[140px] space-y-1">
+                            ${eventsHtml || '<span class="text-[10px] text-slate-300 block text-center pt-4">لا عروض</span>'}
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         function switchView(view) {
@@ -438,10 +550,10 @@
                 btnBrand.className = "px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-white";
                 document.getElementById('timelineView').classList.remove('hidden');
                 document.getElementById('brandView').classList.add('hidden');
+                setupCalendarMonthTabs(filteredOffers);
             }
         }
 
-        // دالة التنقل بين تبويبات الصور (Tabs)
         function switchImageTab(index) {
             document.querySelectorAll('.img-tab-btn').forEach((btn, i) => {
                 if (i === index) {
@@ -467,11 +579,9 @@
             const modal = document.getElementById('offerModal');
             const content = document.getElementById('modalContent');
 
-            // إعداد عرض معرض الصور بنظام التبويبات (Tabs)
             let imagesHtml = '';
             if (item.images && item.images.length > 0) {
                 if (item.images.length === 1) {
-                    // صورة واحدة فقط
                     imagesHtml = `
                         <div class="mb-6">
                             <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col items-center justify-between shadow-xs">
@@ -485,7 +595,6 @@
                         </div>
                     `;
                 } else {
-                    // صور متعددة مع أزرار تبويب (Tabs)
                     imagesHtml = `
                         <div class="mb-6">
                             <div class="flex items-center gap-2 mb-3 overflow-x-auto pb-2 border-b border-slate-200">
