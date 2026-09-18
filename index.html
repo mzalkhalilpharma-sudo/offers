@@ -152,7 +152,7 @@
         </div>
     </footer>
 
-    <!-- Modal for Image & Offer Details (تم تكبير الحجم إلى max-w-5xl) -->
+    <!-- Modal for Image & Offer Details -->
     <div id="offerModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 md:p-6">
         <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[92vh] overflow-y-auto transform transition-all p-5 md:p-8 relative border border-slate-100">
             <button onclick="closeModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-2.5 rounded-full transition z-10">
@@ -441,34 +441,77 @@
             }
         }
 
+        // دالة التنقل بين تبويبات الصور (Tabs)
+        function switchImageTab(index) {
+            document.querySelectorAll('.img-tab-btn').forEach((btn, i) => {
+                if (i === index) {
+                    btn.className = "img-tab-btn px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition whitespace-nowrap bg-emerald-600 text-white shadow-sm";
+                } else {
+                    btn.className = "img-tab-btn px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200";
+                }
+            });
+
+            document.querySelectorAll('.img-tab-panel').forEach((panel, i) => {
+                if (i === index) {
+                    panel.classList.remove('hidden');
+                    panel.classList.add('block');
+                } else {
+                    panel.classList.remove('block');
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
         function openModal(index) {
             const item = allOffers[index];
             const modal = document.getElementById('offerModal');
             const content = document.getElementById('modalContent');
 
-            // إعداد عرض معرض الصور بحجم كبير جداً
+            // إعداد عرض معرض الصور بنظام التبويبات (Tabs)
             let imagesHtml = '';
             if (item.images && item.images.length > 0) {
-                imagesHtml = `
-                    <div class="mb-6">
-                        <h4 class="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">
-                            <i class="fa-solid fa-camera text-emerald-600 text-base"></i> صور العرض المكبرة (${item.images.length}):
-                        </h4>
-                        <div class="grid grid-cols-1 ${item.images.length > 1 ? 'lg:grid-cols-2' : ''} gap-6">
+                if (item.images.length === 1) {
+                    // صورة واحدة فقط
+                    imagesHtml = `
+                        <div class="mb-6">
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col items-center justify-between shadow-xs">
+                                <div class="w-full h-80 md:h-[500px] flex items-center justify-center bg-white rounded-xl overflow-hidden mb-3 border border-slate-100 p-2">
+                                    <img src="${item.images[0]}" alt="${item.product}" class="object-contain max-h-[470px] w-full" onerror="this.parentNode.innerHTML='<div class=\'text-center p-4\'><i class=\'fa-solid fa-circle-exclamation text-amber-500 text-2xl mb-2\'></i><br><span class=\'text-xs text-slate-500 font-medium\'>تعذر تحميل الصورة<br>تأكد من اختيار (Direct link) من ImgBB</span></div>'">
+                                </div>
+                                <a href="${item.images[0]}" target="_blank" download="offer-image-1.jpg" class="w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 rounded-xl shadow-xs transition flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-download"></i> تنزيل الصورة / فتح بالحجم الكامل
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // صور متعددة مع أزرار تبويب (Tabs)
+                    imagesHtml = `
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-3 overflow-x-auto pb-2 border-b border-slate-200">
+                                <span class="text-xs font-bold text-slate-600 ml-2 whitespace-nowrap">
+                                    <i class="fa-solid fa-layer-group text-emerald-600"></i> اختيار الصورة:
+                                </span>
+                                ${item.images.map((_, imgIdx) => `
+                                    <button onclick="switchImageTab(${imgIdx})" class="img-tab-btn px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition whitespace-nowrap ${imgIdx === 0 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'}">
+                                        <i class="fa-regular fa-image ml-1"></i> الصورة ${imgIdx + 1}
+                                    </button>
+                                `).join('')}
+                            </div>
+
                             ${item.images.map((imgUrl, imgIdx) => `
-                                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col items-center justify-between shadow-xs">
-                                    <!-- إطار الصورة المكبر بـ ارتفاع 450px -->
-                                    <div class="w-full h-80 md:h-[450px] flex items-center justify-center bg-white rounded-xl overflow-hidden mb-3 border border-slate-100 p-2">
-                                        <img src="${imgUrl}" alt="${item.product}" class="object-contain max-h-[420px] w-full" onerror="this.parentNode.innerHTML='<div class=\'text-center p-4\'><i class=\'fa-solid fa-circle-exclamation text-amber-500 text-2xl mb-2\'></i><br><span class=\'text-xs text-slate-500 font-medium\'>تعذر تحميل الصورة<br>تأكد من اختيار (Direct link) من ImgBB</span></div>'">
+                                <div class="img-tab-panel ${imgIdx === 0 ? 'block' : 'hidden'} bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col items-center justify-between shadow-xs">
+                                    <div class="w-full h-80 md:h-[500px] flex items-center justify-center bg-white rounded-xl overflow-hidden mb-3 border border-slate-100 p-2">
+                                        <img src="${imgUrl}" alt="${item.product}" class="object-contain max-h-[470px] w-full" onerror="this.parentNode.innerHTML='<div class=\'text-center p-4\'><i class=\'fa-solid fa-circle-exclamation text-amber-500 text-2xl mb-2\'></i><br><span class=\'text-xs text-slate-500 font-medium\'>تعذر تحميل الصورة<br>تأكد من اختيار (Direct link) من ImgBB</span></div>'">
                                     </div>
                                     <a href="${imgUrl}" target="_blank" download="offer-image-${imgIdx + 1}.jpg" class="w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 rounded-xl shadow-xs transition flex items-center justify-center gap-2">
-                                        <i class="fa-solid fa-download"></i> تنزيل الصورة / فتح بالحجم الكامل
+                                        <i class="fa-solid fa-download"></i> تنزيل الصورة ${imgIdx + 1} / فتح بالحجم الكامل
                                     </a>
                                 </div>
                             `).join('')}
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
 
             content.innerHTML = `
