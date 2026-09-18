@@ -152,11 +152,11 @@
         </div>
     </footer>
 
-    <!-- Modal for Image & Offer Details -->
-    <div id="offerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all p-6 relative">
-            <button onclick="closeModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition z-10">
-                <i class="fa-solid fa-xmark text-lg"></i>
+    <!-- Modal for Image & Offer Details (تم تكبير الحجم إلى max-w-5xl) -->
+    <div id="offerModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 md:p-6">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[92vh] overflow-y-auto transform transition-all p-5 md:p-8 relative border border-slate-100">
+            <button onclick="closeModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-2.5 rounded-full transition z-10">
+                <i class="fa-solid fa-xmark text-xl"></i>
             </button>
             
             <div id="modalContent">
@@ -211,7 +211,6 @@
             return `${day} ${month} ${year}`;
         }
 
-        // دالة تنظيف وتصحيح روابط الصور (تدعم الآن ImgBB)
         function formatImageUrl(url) {
             if (!url) return '';
             let cleanedUrl = url.trim();
@@ -224,10 +223,8 @@
                 }
             }
             
-            // ** معالجة روابط ImgBB الخاطئة (روابط صفحة العرض) **
-            // إذا كان الرابط هكذا: https://ibb.co/0jJVdzWj سنحوله لتخمين الرابط المباشر
+            // معالجة روابط ImgBB القصيرة
             if (cleanedUrl.match(/^https?:\/\/(www\.)?ibb\.co\/[a-zA-Z0-9]+$/)) {
-                // نستبدل ibb.co بـ i.ibb.co ونضيف .png كمحاولة لجعله رابط مباشر
                 const imageId = cleanedUrl.split('/').pop();
                 return `https://i.ibb.co/${imageId}/image.png`;
             }
@@ -271,11 +268,10 @@
                          isActive = today <= endDateObj;
                     }
 
-                    // استخراج ومعالجة قائمة الروابط
                     const rawImages = c[7] ? String(c[7].v) : '';
                     const imageList = rawImages
                         .split(/[\n,]/)
-                        .map(u => formatImageUrl(u)) // استخدام الدالة الجديدة المحدثة
+                        .map(u => formatImageUrl(u))
                         .filter(u => u.length > 5);
 
                     return {
@@ -346,7 +342,7 @@
                                 ${item.brand}
                             </span>
                             <div class="flex items-center gap-1.5">
-                                ${hasImages ? `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-md font-bold" title="يحتوي على ${item.images.length} صورة"><i class="fa-solid fa-image"></i> ${item.images.length}</span>` : ''}
+                                ${hasImages ? `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-md font-bold"><i class="fa-solid fa-image"></i> ${item.images.length}</span>` : ''}
                                 <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">
                                     ${item.isActive ? 'ساري' : 'غير نشط'}
                                 </span>
@@ -450,20 +446,22 @@
             const modal = document.getElementById('offerModal');
             const content = document.getElementById('modalContent');
 
+            // إعداد عرض معرض الصور بحجم كبير جداً
             let imagesHtml = '';
             if (item.images && item.images.length > 0) {
                 imagesHtml = `
-                    <div class="mb-5">
-                        <h4 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-                            <i class="fa-solid fa-camera text-emerald-600"></i> صور العرض (${item.images.length}):
+                    <div class="mb-6">
+                        <h4 class="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-camera text-emerald-600 text-base"></i> صور العرض المكبرة (${item.images.length}):
                         </h4>
-                        <div class="grid grid-cols-1 ${item.images.length > 1 ? 'md:grid-cols-2' : ''} gap-4">
+                        <div class="grid grid-cols-1 ${item.images.length > 1 ? 'lg:grid-cols-2' : ''} gap-6">
                             ${item.images.map((imgUrl, imgIdx) => `
-                                <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col items-center justify-between group">
-                                    <div class="w-full h-56 flex items-center justify-center bg-white rounded-lg overflow-hidden mb-2">
-                                        <img src="${imgUrl}" alt="${item.product}" class="object-contain max-h-52 w-full" onerror="this.parentNode.innerHTML='<span class=\'text-xs text-slate-400\'>تعذر تحميل الصورة أو الرابط غير مباشر</span>'">
+                                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col items-center justify-between shadow-xs">
+                                    <!-- إطار الصورة المكبر بـ ارتفاع 450px -->
+                                    <div class="w-full h-80 md:h-[450px] flex items-center justify-center bg-white rounded-xl overflow-hidden mb-3 border border-slate-100 p-2">
+                                        <img src="${imgUrl}" alt="${item.product}" class="object-contain max-h-[420px] w-full" onerror="this.parentNode.innerHTML='<div class=\'text-center p-4\'><i class=\'fa-solid fa-circle-exclamation text-amber-500 text-2xl mb-2\'></i><br><span class=\'text-xs text-slate-500 font-medium\'>تعذر تحميل الصورة<br>تأكد من اختيار (Direct link) من ImgBB</span></div>'">
                                     </div>
-                                    <a href="${imgUrl}" target="_blank" download="offer-image-${imgIdx + 1}.jpg" class="w-full text-center bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white text-xs font-bold py-2 rounded-lg border border-emerald-200 hover:border-emerald-600 transition flex items-center justify-center gap-1.5">
+                                    <a href="${imgUrl}" target="_blank" download="offer-image-${imgIdx + 1}.jpg" class="w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 rounded-xl shadow-xs transition flex items-center justify-center gap-2">
                                         <i class="fa-solid fa-download"></i> تنزيل الصورة / فتح بالحجم الكامل
                                     </a>
                                 </div>
@@ -474,26 +472,28 @@
             }
 
             content.innerHTML = `
-                <div class="mb-4">
-                    <span class="bg-emerald-700 text-white text-lg font-black px-4 py-1.5 rounded-full inline-block shadow-sm mb-2">
+                <div class="mb-5 pb-3 border-b border-slate-100">
+                    <span class="bg-emerald-700 text-white text-lg font-black px-4 py-1.5 rounded-full inline-block shadow-xs mb-2">
                         ${item.brand}
                     </span>
-                    <h2 class="text-xl font-bold text-slate-800 mt-1">${item.product}</h2>
+                    <h2 class="text-xl md:text-2xl font-black text-slate-800 mt-1 leading-snug">${item.product}</h2>
                 </div>
 
                 ${imagesHtml}
 
-                <div class="grid grid-cols-2 gap-3 mb-4 bg-slate-50 p-3 rounded-xl text-xs text-slate-700 border border-slate-200">
-                    <div><strong>نوع العرض:</strong> ${item.offer || '-'}</div>
-                    <div><strong>الفترة:</strong> ${item.startDate} إلى ${item.endDate}</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5 bg-slate-50 p-4 rounded-2xl text-xs md:text-sm text-slate-700 border border-slate-200">
+                    <div><strong>نوع العرض:</strong> <span class="text-emerald-700 font-bold">${item.offer || '-'}</span></div>
+                    <div><strong>فترة العرض:</strong> ${item.startDate} إلى ${item.endDate}</div>
                     <div><strong>طريقة الإدخال:</strong> ${item.entryMethod || '-'}</div>
                     <div><strong>الحافز:</strong> ${item.incentive || '-'}</div>
                 </div>
 
                 ${item.notes ? `
-                    <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
-                        <strong><i class="fa-solid fa-circle-info ml-1"></i> ملاحظات وشروط العرض:</strong>
-                        <p class="mt-1 whitespace-pre-line leading-relaxed">${item.notes}</p>
+                    <div class="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs md:text-sm text-amber-900">
+                        <strong class="text-amber-950 font-bold flex items-center gap-1.5 mb-1">
+                            <i class="fa-solid fa-circle-info text-amber-600 text-base"></i> ملاحظات وشروط العرض:
+                        </strong>
+                        <p class="whitespace-pre-line leading-relaxed mt-1 text-slate-800">${item.notes}</p>
                     </div>
                 ` : ''}
             `;
