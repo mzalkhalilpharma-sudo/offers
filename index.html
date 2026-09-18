@@ -211,16 +211,27 @@
             return `${day} ${month} ${year}`;
         }
 
-        // تحويل روابط Google Drive إلى روابط مباشرة للعرض
-        function convertDriveUrlToDirect(url) {
+        // دالة تنظيف وتصحيح روابط الصور (تدعم الآن ImgBB)
+        function formatImageUrl(url) {
             if (!url) return '';
             let cleanedUrl = url.trim();
+            
+            // معالجة روابط Google Drive
             if (cleanedUrl.includes('drive.google.com') && cleanedUrl.includes('/d/')) {
                 const match = cleanedUrl.match(/\/d\/([^\/]+)/);
                 if (match && match[1]) {
                     return `https://lh3.googleusercontent.com/d/${match[1]}`;
                 }
             }
+            
+            // ** معالجة روابط ImgBB الخاطئة (روابط صفحة العرض) **
+            // إذا كان الرابط هكذا: https://ibb.co/0jJVdzWj سنحوله لتخمين الرابط المباشر
+            if (cleanedUrl.match(/^https?:\/\/(www\.)?ibb\.co\/[a-zA-Z0-9]+$/)) {
+                // نستبدل ibb.co بـ i.ibb.co ونضيف .png كمحاولة لجعله رابط مباشر
+                const imageId = cleanedUrl.split('/').pop();
+                return `https://i.ibb.co/${imageId}/image.png`;
+            }
+
             return cleanedUrl;
         }
 
@@ -260,11 +271,11 @@
                          isActive = today <= endDateObj;
                     }
 
-                    // استخراج ومعالجة قائمة روابط الصور المتعددة (المفصولة بـ فاصلة أو سطر جديد)
+                    // استخراج ومعالجة قائمة الروابط
                     const rawImages = c[7] ? String(c[7].v) : '';
                     const imageList = rawImages
                         .split(/[\n,]/)
-                        .map(u => convertDriveUrlToDirect(u))
+                        .map(u => formatImageUrl(u)) // استخدام الدالة الجديدة المحدثة
                         .filter(u => u.length > 5);
 
                     return {
@@ -439,7 +450,6 @@
             const modal = document.getElementById('offerModal');
             const content = document.getElementById('modalContent');
 
-            // إعداد عرض معرض الصور (Image Gallery) مع زر تنزيل لكل صورة
             let imagesHtml = '';
             if (item.images && item.images.length > 0) {
                 imagesHtml = `
@@ -451,7 +461,7 @@
                             ${item.images.map((imgUrl, imgIdx) => `
                                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col items-center justify-between group">
                                     <div class="w-full h-56 flex items-center justify-center bg-white rounded-lg overflow-hidden mb-2">
-                                        <img src="${imgUrl}" alt="${item.product}" class="object-contain max-h-52 w-full" onerror="this.parentNode.innerHTML='<span class=\'text-xs text-slate-400\'>تعذر تحميل الصورة</span>'">
+                                        <img src="${imgUrl}" alt="${item.product}" class="object-contain max-h-52 w-full" onerror="this.parentNode.innerHTML='<span class=\'text-xs text-slate-400\'>تعذر تحميل الصورة أو الرابط غير مباشر</span>'">
                                     </div>
                                     <a href="${imgUrl}" target="_blank" download="offer-image-${imgIdx + 1}.jpg" class="w-full text-center bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white text-xs font-bold py-2 rounded-lg border border-emerald-200 hover:border-emerald-600 transition flex items-center justify-center gap-1.5">
                                         <i class="fa-solid fa-download"></i> تنزيل الصورة / فتح بالحجم الكامل
