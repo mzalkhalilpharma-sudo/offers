@@ -15,7 +15,6 @@
         body { font-family: 'Cairo', sans-serif; }
         .font-english { font-family: 'Montserrat', sans-serif; }
 
-        /* تأثير إضاءة نيون ليافطة العروض (بتنور وتطفي) */
         @keyframes neonPulse {
             0%, 100% {
                 text-shadow: 
@@ -24,8 +23,7 @@
                     0 0 21px #fff,
                     0 0 42px #10b981,
                     0 0 82px #10b981,
-                    0 0 92px #10b981,
-                    0 0 102px #10b981;
+                    0 0 92px #10b981;
                 box-shadow: 
                     0 0 15px #10b981,
                     inset 0 0 15px #10b981;
@@ -35,21 +33,11 @@
                 text-shadow: 
                     0 0 2px #fff,
                     0 0 5px #fff,
-                    0 0 10px #10b981,
-                    0 0 20px #10b981;
+                    0 0 10px #10b981;
                 box-shadow: 
                     0 0 5px #059669,
                     inset 0 0 5px #059669;
                 opacity: 0.85;
-            }
-            70% {
-                opacity: 0.95;
-            }
-            72% {
-                opacity: 0.4;
-            }
-            74% {
-                opacity: 1;
             }
         }
 
@@ -88,13 +76,11 @@
             </div>
         </header>
 
-        <!-- Neon Banner Sign (يافطة ينور وتطفي) -->
+        <!-- Neon Banner Sign -->
         <section class="max-w-7xl mx-auto px-4 pt-6">
             <div class="bg-slate-950 rounded-3xl p-6 md:p-8 text-center border-2 border-emerald-500/80 shadow-2xl relative overflow-hidden">
-                <!-- Background decorative glow -->
                 <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-96 h-32 bg-emerald-500/10 blur-3xl rounded-full"></div>
 
-                <!-- Neon Title Banner -->
                 <div class="neon-sign inline-block bg-slate-900/90 border-2 border-emerald-400 px-8 py-3.5 rounded-2xl">
                     <div class="flex items-center justify-center gap-3 text-white">
                         <span class="text-3xl md:text-5xl font-black text-emerald-300 tracking-wide">عروض</span>
@@ -111,7 +97,7 @@
                 <!-- Search input -->
                 <div class="relative w-full md:w-96">
                     <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3.5 text-slate-400"></i>
-                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="ابحث باسم الشركة، المنتج، أو العرض..." 
+                    <input type="text" id="searchInput" oninput="applyFilters()" placeholder="ابحث باسم الشركة، المنتج، أو الكلمات المفتاحية..." 
                            class="w-full pr-10 pl-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white text-sm">
                 </div>
 
@@ -157,7 +143,7 @@
         </main>
     </div>
 
-    <!-- Footer Signature (Design by Mena Nazih) -->
+    <!-- Footer Signature -->
     <footer class="bg-slate-900 text-slate-400 border-t border-slate-800 py-6 mt-10">
         <div class="max-w-7xl mx-auto px-4 text-center">
             <p class="text-xs md:text-sm font-english tracking-widest text-slate-400">
@@ -169,7 +155,7 @@
     <!-- Modal for Image & Offer Details -->
     <div id="offerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all p-6 relative">
-            <button onclick="closeModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition">
+            <button onclick="closeModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition z-10">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
             
@@ -187,13 +173,11 @@
         let allOffers = [];
         let currentView = 'brand';
 
-        // قائمة أسماء الأشهر باللغة العربية
         const monthsArabic = [
             "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
             "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
         ];
 
-        // دالة لتحليل التاريخ بتنسيق (الشهر/اليوم/السنة)
         function parseDateSafely(dateInput) {
              if (!dateInput) return null;
              let str = String(dateInput).trim();
@@ -219,13 +203,25 @@
              return isNaN(parsed.getTime()) ? null : parsed;
         }
 
-        // تحويل التاريخ إلى صيغة عربية واضحة (اليوم + اسم الشهر بالعربي + السنة)
         function formatDateInArabic(dateObj) {
             if (!dateObj) return 'غير محدد';
             const day = dateObj.getDate();
             const month = monthsArabic[dateObj.getMonth()];
             const year = dateObj.getFullYear();
             return `${day} ${month} ${year}`;
+        }
+
+        // تحويل روابط Google Drive إلى روابط مباشرة للعرض
+        function convertDriveUrlToDirect(url) {
+            if (!url) return '';
+            let cleanedUrl = url.trim();
+            if (cleanedUrl.includes('drive.google.com') && cleanedUrl.includes('/d/')) {
+                const match = cleanedUrl.match(/\/d\/([^\/]+)/);
+                if (match && match[1]) {
+                    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+            }
+            return cleanedUrl;
         }
 
         async function fetchOffers() {
@@ -264,17 +260,24 @@
                          isActive = today <= endDateObj;
                     }
 
+                    // استخراج ومعالجة قائمة روابط الصور المتعددة (المفصولة بـ فاصلة أو سطر جديد)
+                    const rawImages = c[7] ? String(c[7].v) : '';
+                    const imageList = rawImages
+                        .split(/[\n,]/)
+                        .map(u => convertDriveUrlToDirect(u))
+                        .filter(u => u.length > 5);
+
                     return {
-                        brand: c[0] ? c[0].v : 'غير محدد',
-                        product: c[1] ? c[1].v : '',
-                        offer: c[2] ? c[2].v : '',
+                        brand: c[0] ? String(c[0].v) : 'غير محدد',
+                        product: c[1] ? String(c[1].v) : '',
+                        offer: c[2] ? String(c[2].v) : '',
                         startDate: startDateFormatted,
                         endDate: endDateFormatted,
-                        offerTime: c[5] ? c[5].v : '',
-                        entryMethod: c[6] ? c[6].v : '',
-                        imageUrl: c[7] ? c[7].v : '',
-                        notes: c[8] ? c[8].v : '',
-                        incentive: c[9] ? c[9].v : '',
+                        offerTime: c[5] ? String(c[5].v) : '',
+                        entryMethod: c[6] ? String(c[6].v) : '',
+                        images: imageList,
+                        notes: c[8] ? String(c[8].v) : '',
+                        incentive: c[9] ? String(c[9].v) : '',
                         isActive: isActive
                     };
                 }).filter(item => item.brand || item.product);
@@ -296,7 +299,8 @@
             const filtered = allOffers.filter(item => {
                 const matchesSearch = item.brand.toLowerCase().includes(search) || 
                                       item.product.toLowerCase().includes(search) || 
-                                      (item.offer && item.offer.toLowerCase().includes(search));
+                                      item.offer.toLowerCase().includes(search) ||
+                                      item.notes.toLowerCase().includes(search);
                 
                 const matchesStatus = statusFilter === 'all' || item.isActive;
                 return matchesSearch && matchesStatus;
@@ -321,6 +325,8 @@
 
             container.innerHTML = offers.map((item) => {
                 const originalIndex = allOffers.indexOf(item);
+                const hasImages = item.images && item.images.length > 0;
+
                 return `
                 <div onclick="openModal(${originalIndex})" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition border border-slate-200 cursor-pointer flex flex-col justify-between group">
                     <div>
@@ -328,9 +334,12 @@
                             <span class="bg-emerald-700 text-white text-base md:text-lg font-black px-3.5 py-1 rounded-full shadow-sm">
                                 ${item.brand}
                             </span>
-                            <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">
-                                ${item.isActive ? 'ساري' : 'غير نشط'}
-                            </span>
+                            <div class="flex items-center gap-1.5">
+                                ${hasImages ? `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-md font-bold" title="يحتوي على ${item.images.length} صورة"><i class="fa-solid fa-image"></i> ${item.images.length}</span>` : ''}
+                                <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">
+                                    ${item.isActive ? 'ساري' : 'غير نشط'}
+                                </span>
+                            </div>
                         </div>
 
                         <h3 class="font-bold text-slate-800 text-base mb-2 group-hover:text-emerald-600 transition line-clamp-2">
@@ -342,7 +351,7 @@
 
                     <div class="pt-3 border-t border-slate-100 text-xs text-slate-500 flex justify-between items-center">
                         <span><i class="fa-regular fa-calendar ml-1"></i> ${item.startDate} إلى ${item.endDate}</span>
-                        <span class="text-emerald-600 font-semibold">التفاصيل <i class="fa-solid fa-chevron-left text-[10px]"></i></span>
+                        <span class="text-emerald-600 font-semibold">التفاصيل والصور <i class="fa-solid fa-chevron-left text-[10px]"></i></span>
                     </div>
                 </div>
                 `;
@@ -361,6 +370,7 @@
                 const barGradient = item.isActive 
                     ? 'bg-gradient-to-l from-emerald-500 via-teal-500 to-emerald-600' 
                     : 'bg-slate-300';
+                const hasImages = item.images && item.images.length > 0;
 
                 return `
                 <div onclick="openModal(${originalIndex})" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition cursor-pointer">
@@ -370,9 +380,12 @@
                             <span>${item.brand}</span>
                         </div>
                         
-                        <span class="text-xs px-3 py-1 rounded-full font-bold ${item.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">
-                            ${item.isActive ? 'العرض ساري حالياً' : 'عرض منتهي'}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            ${hasImages ? `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-lg font-bold"><i class="fa-solid fa-images ml-1"></i> صور متوفرة (${item.images.length})</span>` : ''}
+                            <span class="text-xs px-3 py-1 rounded-full font-bold ${item.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">
+                                ${item.isActive ? 'العرض ساري حالياً' : 'عرض منتهي'}
+                            </span>
+                        </div>
                     </div>
 
                     <div class="mb-4">
@@ -426,6 +439,30 @@
             const modal = document.getElementById('offerModal');
             const content = document.getElementById('modalContent');
 
+            // إعداد عرض معرض الصور (Image Gallery) مع زر تنزيل لكل صورة
+            let imagesHtml = '';
+            if (item.images && item.images.length > 0) {
+                imagesHtml = `
+                    <div class="mb-5">
+                        <h4 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+                            <i class="fa-solid fa-camera text-emerald-600"></i> صور العرض (${item.images.length}):
+                        </h4>
+                        <div class="grid grid-cols-1 ${item.images.length > 1 ? 'md:grid-cols-2' : ''} gap-4">
+                            ${item.images.map((imgUrl, imgIdx) => `
+                                <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col items-center justify-between group">
+                                    <div class="w-full h-56 flex items-center justify-center bg-white rounded-lg overflow-hidden mb-2">
+                                        <img src="${imgUrl}" alt="${item.product}" class="object-contain max-h-52 w-full" onerror="this.parentNode.innerHTML='<span class=\'text-xs text-slate-400\'>تعذر تحميل الصورة</span>'">
+                                    </div>
+                                    <a href="${imgUrl}" target="_blank" download="offer-image-${imgIdx + 1}.jpg" class="w-full text-center bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white text-xs font-bold py-2 rounded-lg border border-emerald-200 hover:border-emerald-600 transition flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-download"></i> تنزيل الصورة / فتح بالحجم الكامل
+                                    </a>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
             content.innerHTML = `
                 <div class="mb-4">
                     <span class="bg-emerald-700 text-white text-lg font-black px-4 py-1.5 rounded-full inline-block shadow-sm mb-2">
@@ -434,13 +471,9 @@
                     <h2 class="text-xl font-bold text-slate-800 mt-1">${item.product}</h2>
                 </div>
 
-                ${item.imageUrl ? `
-                    <div class="mb-4 rounded-xl overflow-hidden bg-slate-100 max-h-72 flex items-center justify-center border border-slate-200">
-                        <img src="${item.imageUrl}" alt="${item.product}" class="object-contain max-h-72 w-full" onerror="this.parentNode.style.display='none'">
-                    </div>
-                ` : ''}
+                ${imagesHtml}
 
-                <div class="grid grid-cols-2 gap-3 mb-4 bg-slate-50 p-3 rounded-xl text-xs text-slate-700">
+                <div class="grid grid-cols-2 gap-3 mb-4 bg-slate-50 p-3 rounded-xl text-xs text-slate-700 border border-slate-200">
                     <div><strong>نوع العرض:</strong> ${item.offer || '-'}</div>
                     <div><strong>الفترة:</strong> ${item.startDate} إلى ${item.endDate}</div>
                     <div><strong>طريقة الإدخال:</strong> ${item.entryMethod || '-'}</div>
